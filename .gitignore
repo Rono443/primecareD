@@ -1,0 +1,51 @@
+﻿# Flutter/Dart
+.Dart_tool/
+.Flutter-plugins
+.Flutter-plugins-dependencies
+.pub/
+.pub-cache/
+.pub-data/
+build/
+*.lock
+*.g.dart
+*.freezed.dart
+# Android
+android/.gradle/
+android/.idea/
+android/local.properties
+android/*.iml
+android/app/*.iml
+android/captures/
+android/build/
+android/app/build/
+android/**/.cxx/
+# iOS
+ios/.symlinks/
+ios/Pods/
+ios/Podfile.lock
+ios/.generated/
+ios/Flutter/App.framework/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+# macOS
+macos/Pods/
+macos/Podfile.lock
+macos/.generated/
+macos/Flutter/GeneratedPluginRegistrant
+# Web
+web/*.dart.js
+web/*.js.map
+web/*.js.deps
+web/*.js.map.gz
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+# Environment variables
+.env
+*.env
+# Code coverage
+coverage/
+*.lcov
