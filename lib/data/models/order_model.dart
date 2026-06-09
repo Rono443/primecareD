@@ -29,6 +29,10 @@ class OrderModel {
   final String? pickupAddress;
   final String? deliveryAddress;
   final String? notes;
+  final String? qrCode;
+  final String? pickupPhoto;
+  final String? deliveryPhoto;
+  final Map<String, dynamic>? metadata; // For AI analytics (weight, machine used)
 
   OrderModel({
     required this.id,
@@ -43,6 +47,10 @@ class OrderModel {
     this.pickupAddress,
     this.deliveryAddress,
     this.notes,
+    this.qrCode,
+    this.pickupPhoto,
+    this.deliveryPhoto,
+    this.metadata,
   });
 
   Map<String, dynamic> toMap() {
@@ -59,6 +67,10 @@ class OrderModel {
       'pickupAddress': pickupAddress,
       'deliveryAddress': deliveryAddress,
       'notes': notes,
+      'qrCode': qrCode,
+      'pickupPhoto': pickupPhoto,
+      'deliveryPhoto': deliveryPhoto,
+      'metadata': metadata,
     };
   }
 
@@ -81,6 +93,48 @@ class OrderModel {
       pickupAddress: map['pickupAddress'],
       deliveryAddress: map['deliveryAddress'],
       notes: map['notes'],
+      qrCode: map['qrCode'],
+      pickupPhoto: map['pickupPhoto'],
+      deliveryPhoto: map['deliveryPhoto'],
+      metadata: map['metadata'],
+    );
+  }
+
+  OrderModel copyWith({
+    String? id,
+    String? customerId,
+    String? branchId,
+    List<OrderItemModel>? items,
+    double? totalPrice,
+    OrderStatus? status,
+    DateTime? createdAt,
+    DateTime? pickupDate,
+    DateTime? deliveryDate,
+    String? pickupAddress,
+    String? deliveryAddress,
+    String? notes,
+    String? qrCode,
+    String? pickupPhoto,
+    String? deliveryPhoto,
+    Map<String, dynamic>? metadata,
+  }) {
+    return OrderModel(
+      id: id ?? this.id,
+      customerId: customerId ?? this.customerId,
+      branchId: branchId ?? this.branchId,
+      items: items ?? this.items,
+      totalPrice: totalPrice ?? this.totalPrice,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      pickupDate: pickupDate ?? this.pickupDate,
+      deliveryDate: deliveryDate ?? this.deliveryDate,
+      pickupAddress: pickupAddress ?? this.pickupAddress,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+      notes: notes ?? this.notes,
+      qrCode: qrCode ?? this.qrCode,
+      pickupPhoto: pickupPhoto ?? this.pickupPhoto,
+      deliveryPhoto: deliveryPhoto ?? this.deliveryPhoto,
+      metadata: metadata ?? this.metadata,
     );
   }
 }

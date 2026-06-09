@@ -7,12 +7,11 @@ import 'core/utils/router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Note: Ensure you have added google-services.json (Android) 
-  // and GoogleService-Info.plist (iOS) to your project.
   try {
     await Firebase.initializeApp();
   } catch (e) {
-    debugPrint('Firebase initialization failed: \$e');
+    debugPrint('Firebase initialization failed: $e');
+    debugPrint('Please ensure google-services.json (Android) or GoogleService-Info.plist (iOS) is added.');
   }
 
   runApp(

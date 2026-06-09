@@ -1,26 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../providers/auth_provider.dart';
 import '../legal_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('My Profile')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 50,
-              backgroundImage: NetworkImage('https://via.placeholder.com/150'),
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              child: user?.profilePicture != null 
+                ? ClipOval(child: Image.network(user!.profilePicture!, width: 100, height: 100, fit: BoxFit.cover))
+                : Text(user?.name.substring(0, 1).toUpperCase() ?? '?', style: const TextStyle(fontSize: 40, color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 16),
-            const Text('Jane Doe', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const Text('jane.doe@example.com', style: TextStyle(color: Colors.grey)),
+            Text(user?.name ?? 'Guest User', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(user?.email ?? '', style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 32),
             _buildProfileTile(Icons.person_outline, 'Edit Profile', () {}),
             _buildProfileTile(Icons.location_on_outlined, 'Manage Addresses', () {}),
@@ -30,7 +37,10 @@ class ProfileScreen extends StatelessWidget {
             _buildProfileTile(Icons.gavel_outlined, 'Terms of Service', () => _showLegal(context, 'Terms of Service')),
             _buildProfileTile(Icons.privacy_tip_outlined, 'Privacy Policy', () => _showLegal(context, 'Privacy Policy')),
             const Divider(height: 32),
-            _buildProfileTile(Icons.logout, 'Logout', () => context.go('/login'), isDestructive: true),
+            _buildProfileTile(Icons.logout, 'Logout', () async {
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) context.go('/login');
+            }, isDestructive: true),
           ],
         ),
       ),

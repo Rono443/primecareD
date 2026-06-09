@@ -1,12 +1,19 @@
-enum MachineStatus { idle, running, maintenance, error }
+enum MachineStatus {
+  idle,
+  running,
+  maintenance,
+  error
+}
 
 class MachineModel {
   final String id;
   final String name;
-  final String type; // Washer, Dryer
+  final String type;
   final MachineStatus status;
-  final int capacityKg;
+  final double capacityKg;
   final String? currentOrderId;
+  final int totalCycles;
+  final int maintenanceThreshold;
 
   MachineModel({
     required this.id,
@@ -15,27 +22,10 @@ class MachineModel {
     required this.status,
     required this.capacityKg,
     this.currentOrderId,
+    this.totalCycles = 0,
+    this.maintenanceThreshold = 500,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'type': type,
-      'status': status.name,
-      'capacityKg': capacityKg,
-      'currentOrderId': currentOrderId,
-    };
-  }
-
-  factory MachineModel.fromMap(Map<String, dynamic> map) {
-    return MachineModel(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      type: map['type'] ?? '',
-      status: MachineStatus.values.firstWhere((e) => e.name == map['status'], orElse: () => MachineStatus.idle),
-      capacityKg: map['capacityKg'] ?? 0,
-      currentOrderId: map['currentOrderId'],
-    );
-  }
+  bool get needsMaintenance => totalCycles >= maintenanceThreshold;
+  double get healthPercentage => ((maintenanceThreshold - totalCycles) / maintenanceThreshold).clamp(0, 1);
 }

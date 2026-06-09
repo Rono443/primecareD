@@ -46,9 +46,9 @@ dependencies:
   timeago: ^3.6.1
 
   # Maps & Location
-  geolocator: ^10.1.0
-  geocoding: ^2.1.1
-  google_maps_flutter: ^2.5.0
+  geolocator: ^12.0.0
+  geocoding: ^3.0.0
+  google_maps_flutter: ^2.10.0
 
   # Media
   image_picker: ^1.1.2
@@ -76,6 +76,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/logo.png"
+  min_sdk_android: 23 # matches your local.properties
 
 flutter:
   uses-material-design: true

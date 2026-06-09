@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/models/order_model.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/auth_provider.dart';
 
-class OrderSummaryScreen extends StatelessWidget {
+class OrderSummaryScreen extends ConsumerWidget {
   const OrderSummaryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cart = ref.watch(cartProvider);
+    final user = ref.watch(authProvider);
+
+    final subtotal = cart.totalPrice;
+    const deliveryFee = 200.0;
+    final tax = subtotal * 0.16;
+    final total = subtotal + deliveryFee + tax;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Order Summary')),
       body: SingleChildScrollView(
@@ -17,8 +29,8 @@ class OrderSummaryScreen extends StatelessWidget {
             _buildSectionHeader('Pickup & Delivery'),
             _buildInfoCard(
               icon: Icons.location_on_outlined,
-              title: 'Home Address',
-              subtitle: '123 Prime St, Nairobi, Kenya',
+              title: 'Delivery Address',
+              subtitle: user?.address ?? '123 Prime St, Nairobi, Kenya',
               onEdit: () {},
             ),
             const SizedBox(height: 12),
@@ -30,16 +42,30 @@ class OrderSummaryScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             _buildSectionHeader('Order Details'),
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    _PriceRow(label: 'Subtotal', value: 'KES 1,350'),
-                    _PriceRow(label: 'Pickup & Delivery', value: 'KES 200'),
-                    _PriceRow(label: 'Tax (16%)', value: 'KES 216'),
-                    Divider(),
-                    _PriceRow(label: 'Total', value: 'KES 1,766', isTotal: true),
+                    ...cart.selectedItems.entries.map((entry) {
+                      final item = cart.availableItems.firstWhere((i) => i['id'] == entry.key);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('${entry.value}x ${item['name']}'),
+                            Text('KES ${item['price'] * entry.value}'),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    const Divider(),
+                    _PriceRow(label: 'Subtotal', value: 'KES ${subtotal.toStringAsFixed(0)}'),
+                    const _PriceRow(label: 'Pickup & Delivery', value: 'KES 200'),
+                    _PriceRow(label: 'Tax (16%)', value: 'KES ${tax.toStringAsFixed(0)}'),
+                    const Divider(),
+                    _PriceRow(label: 'Total', value: 'KES ${total.toStringAsFixed(0)}', isTotal: true),
                   ],
                 ),
               ),
@@ -48,9 +74,46 @@ class OrderSummaryScreen extends StatelessWidget {
             _buildSectionHeader('Payment Method'),
             _buildPaymentSelection(),
             const SizedBox(height: 48),
-            ElevatedButton(
-              onPressed: () => _showSuccessDialog(context),
-              child: const Text('PLACE ORDER'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (user == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please login to place an order')),
+                    );
+                    return;
+                  }
+
+                  final orderItems = cart.selectedItems.entries.map((entry) {
+                    final item = cart.availableItems.firstWhere((i) => i['id'] == entry.key);
+                    return OrderItemModel(
+                      serviceId: cart.selectedService?['id'] ?? '',
+                      categoryId: item['category'] ?? '',
+                      quantity: entry.value,
+                      price: item['price'],
+                    );
+                  }).toList();
+
+                  final newOrder = OrderModel(
+                    id: 'PC-${DateTime.now().millisecondsSinceEpoch}',
+                    customerId: user.id,
+                    items: orderItems,
+                    totalPrice: total,
+                    status: OrderStatus.received,
+                    createdAt: DateTime.now(),
+                    pickupAddress: user.address ?? 'Default Address',
+                    deliveryAddress: user.address ?? 'Default Address',
+                  );
+
+                  await ref.read(orderProvider.notifier).addOrder(newOrder);
+                  ref.read(cartProvider.notifier).clear();
+                  if (context.mounted) {
+                    _showSuccessDialog(context, newOrder.id);
+                  }
+                },
+                child: const Text('PLACE ORDER'),
+              ),
             ),
           ],
         ),
@@ -115,31 +178,43 @@ class OrderSummaryScreen extends StatelessWidget {
     );
   }
 
-  void _showSuccessDialog(BuildContext context) {
+  void _showSuccessDialog(BuildContext context, String orderId) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, color: AppColors.success, size: 80),
-            const SizedBox(height: 24),
-            const Text(
-              'Order Placed!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Your order #PC-9824 has been received. We\'ll notify you when the rider is assigned.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: AppColors.successGradient,
+                shape: BoxShape.circle,
+                boxShadow: AppColors.successGlow,
+              ),
+              child: const Icon(Icons.check_rounded, color: Colors.white, size: 48),
             ),
             const SizedBox(height: 32),
+            const Text(
+              'Order Confirmed!',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -1),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Your order #$orderId has been successfully placed. Your clothes are in good hands!',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
+            ),
+            const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () => context.go('/customer-home'),
-              child: const Text('TRACK ORDER'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secondary,
+                minimumSize: const Size(double.infinity, 56),
+              ),
+              child: const Text('GO TO DASHBOARD'),
             ),
           ],
         ),

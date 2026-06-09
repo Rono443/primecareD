@@ -19,6 +19,7 @@ import '../../presentation/screens/admin/machine_management_screen.dart';
 import '../../presentation/screens/admin/expense_tracker_screen.dart';
 import '../../presentation/screens/staff/staff_home_screen.dart';
 import '../../presentation/screens/rider/rider_home_screen.dart';
+import '../../presentation/screens/admin/customer_management_screen.dart';
 import '../../presentation/screens/splash_screen.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -53,8 +54,10 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const OrderSummaryScreen(),
         ),
         GoRoute(
-          path: 'order-tracking',
-          builder: (context, state) => const OrderTrackingScreen(),
+          path: 'order-tracking/:orderId',
+          builder: (context, state) => OrderTrackingScreen(
+            orderId: state.pathParameters['orderId'] ?? '',
+          ),
         ),
         GoRoute(
           path: 'profile',
@@ -89,6 +92,10 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: 'staff',
           builder: (context, state) => const StaffManagementScreen(),
+        ),
+        GoRoute(
+          path: 'customers',
+          builder: (context, state) => const CustomerManagementScreen(),
         ),
         GoRoute(
           path: 'machines',

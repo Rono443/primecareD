@@ -15,6 +15,7 @@ class UserModel {
   final UserRole role;
   final String? profilePicture;
   final String? branchId;
+  final String? address;
 
   UserModel({
     required this.id,
@@ -24,6 +25,7 @@ class UserModel {
     required this.role,
     this.profilePicture,
     this.branchId,
+    this.address,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +37,7 @@ class UserModel {
       'role': role.name,
       'profilePicture': profilePicture,
       'branchId': branchId,
+      'address': address,
     };
   }
 
@@ -50,6 +53,7 @@ class UserModel {
       ),
       profilePicture: map['profilePicture'],
       branchId: map['branchId'],
+      address: map['address'],
     );
   }
 }

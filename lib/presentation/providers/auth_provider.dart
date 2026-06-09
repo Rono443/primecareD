@@ -1,27 +1,57 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/user_model.dart';
+import '../../data/sources/auth_remote_source.dart';
+
+final authSourceProvider = Provider((ref) => AuthRemoteSource());
 
 final authProvider = StateNotifierProvider<AuthNotifier, UserModel?>((ref) {
-  return AuthNotifier();
+  return AuthNotifier(ref.watch(authSourceProvider));
 });
 
 class AuthNotifier extends StateNotifier<UserModel?> {
-  AuthNotifier() : super(null);
+  final AuthRemoteSource _authSource;
 
-  void login(String email, String password) {
-    // Mock login logic
-    if (email.contains('admin')) {
-      state = UserModel(id: '1', email: email, name: 'Admin User', role: UserRole.superAdmin);
-    } else if (email.contains('staff')) {
-      state = UserModel(id: '2', email: email, name: 'Staff User', role: UserRole.laundryStaff);
-    } else if (email.contains('rider')) {
-      state = UserModel(id: '3', email: email, name: 'Rider User', role: UserRole.deliveryRider);
-    } else {
-      state = UserModel(id: '4', email: email, name: 'Customer User', role: UserRole.customer);
+  AuthNotifier(this._authSource) : super(null) {
+    _init();
+  }
+
+  void _init() {
+    _authSource.authStateChanges.listen((user) async {
+      try {
+        if (user != null) {
+          state = await _authSource.getUserData(user.uid);
+        } else {
+          state = null;
+        }
+      } catch (e) {
+        debugPrint('Auth listener error: $e');
+        state = null;
+      }
+    }, onError: (e) {
+      debugPrint('Auth stream error: $e');
+      state = null;
+    });
+  }
+
+  Future<void> login(String email, String password) async {
+    try {
+      state = await _authSource.login(email, password);
+    } catch (e) {
+      rethrow;
     }
   }
 
-  void logout() {
+  Future<void> register(String email, String password, String name, UserRole role) async {
+    try {
+      state = await _authSource.register(email, password, name, role);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> logout() async {
+    await _authSource.logout();
     state = null;
   }
 }

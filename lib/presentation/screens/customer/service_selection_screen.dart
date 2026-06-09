@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../providers/order_provider.dart';
 
-class ServiceSelectionScreen extends StatelessWidget {
+class ServiceSelectionScreen extends ConsumerWidget {
   const ServiceSelectionScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final services = [
-      {'id': '1', 'name': 'Wash & Fold', 'desc': 'Clean and neatly folded clothes.', 'price': '100/kg', 'icon': Icons.local_laundry_service},
-      {'id': '2', 'name': 'Wash & Iron', 'desc': 'Wash, dry and professionally ironed.', 'price': '150/kg', 'icon': Icons.iron},
-      {'id': '3', 'name': 'Dry Cleaning', 'desc': 'Special care for delicate fabrics.', 'price': '300/item', 'icon': Icons.dry_cleaning},
-      {'id': '4', 'name': 'Iron Only', 'desc': 'Just professional pressing.', 'price': '50/item', 'icon': Icons.check_circle_outline},
+      {'id': 's1', 'name': 'Wash & Fold', 'desc': 'Clean and neatly folded clothes.', 'price': '100/kg', 'icon': Icons.local_laundry_service},
+      {'id': 's2', 'name': 'Wash & Iron', 'desc': 'Wash, dry and professionally ironed.', 'price': '150/kg', 'icon': Icons.iron},
+      {'id': 's3', 'name': 'Dry Cleaning', 'desc': 'Special care for delicate fabrics.', 'price': '300/item', 'icon': Icons.dry_cleaning},
+      {'id': 's4', 'name': 'Iron Only', 'desc': 'Just professional pressing.', 'price': '50/item', 'icon': Icons.check_circle_outline},
     ];
 
     return Scaffold(
@@ -47,7 +49,10 @@ class ServiceSelectionScreen extends StatelessWidget {
                 ],
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/customer-home/item-selection'),
+              onTap: () {
+                ref.read(cartProvider.notifier).setService(service);
+                context.push('/customer-home/item-selection');
+              },
             ),
           );
         },

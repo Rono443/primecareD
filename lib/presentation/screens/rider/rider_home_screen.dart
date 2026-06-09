@@ -1,40 +1,78 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/models/order_model.dart';
+import '../../providers/order_provider.dart';
 
-class RiderHomeScreen extends StatelessWidget {
+class RiderHomeScreen extends ConsumerWidget {
   const RiderHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Rider Dashboard'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Pickups (3)'),
-              Tab(text: 'Deliveries (2)'),
-            ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ordersAsync = ref.watch(allOrdersProvider);
+
+    return ordersAsync.when(
+      data: (orders) {
+        final pickups = orders.where((o) => o.status == OrderStatus.received).toList();
+        final deliveries = orders.where((o) => o.status == OrderStatus.readyForDelivery).toList();
+
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Rider Dashboard', style: TextStyle(fontSize: 18)),
+                  Text('Online • Optimized Route', style: TextStyle(fontSize: 12, color: Colors.greenAccent)),
+                ],
+              ),
+              bottom: TabBar(
+                tabs: [
+                  Tab(text: 'Pickups (${pickups.length})'),
+                  Tab(text: 'Deliveries (${deliveries.length})'),
+                ],
+              ),
+            ),
+            body: TabBarView(
+              children: [
+                _buildTaskList(context, ref, pickups, true),
+                _buildTaskList(context, ref, deliveries, false),
+              ],
+            ),
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildTaskList(isPickup: true),
-            _buildTaskList(isPickup: false),
-          ],
-        ),
-      ),
+        );
+      },
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
     );
   }
 
-  Widget _buildTaskList({required bool isPickup}) {
+  Widget _buildTaskList(BuildContext context, WidgetRef ref, List<OrderModel> orders, bool isPickup) {
+    if (orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(isPickup ? 'All pickups completed!' : 'No pending deliveries'),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: 3,
+      itemCount: orders.length,
       itemBuilder: (context, index) {
+        final order = orders[index];
+        final bool hasQr = order.qrCode != null;
+        final bool hasPhoto = isPickup ? order.pickupPhoto != null : order.deliveryPhoto != null;
+
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -44,43 +82,56 @@ class RiderHomeScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      isPickup ? 'PICKUP #P-10$index' : 'DELIVERY #D-50$index',
+                      'ORDER #${order.id.split('-').last.substring(0, 5)}',
                       style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                     ),
-                    const Text('Today, 2:00 PM', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('1.2 km away', style: TextStyle(fontSize: 10, color: Colors.blue)),
+                    ),
                   ],
                 ),
                 const Divider(height: 24),
-                const Row(
-                  children: [
-                    Icon(Icons.person, size: 16, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('John Doe', style: TextStyle(fontWeight: FontWeight.w600)),
-                  ],
-                ),
+                _buildInfoRow(Icons.person, order.customerId),
                 const SizedBox(height: 8),
-                const Row(
+                _buildInfoRow(Icons.location_on, isPickup ? (order.pickupAddress ?? 'N/A') : (order.deliveryAddress ?? 'N/A')),
+                const SizedBox(height: 20),
+                
+                // Intelligent Checklist
+                const Text('Required Actions:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
+                Row(
                   children: [
-                    Icon(Icons.location_on, size: 16, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Expanded(child: Text('Westlands, Waiyaki Way, Nairobi', maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    _buildCheckItem('Scan Tag', hasQr),
+                    const SizedBox(width: 16),
+                    _buildCheckItem('Photo Proof', hasPhoto),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
+
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {},
-                        icon: const Icon(Icons.directions),
+                        icon: const Icon(Icons.map_outlined),
                         label: const Text('Navigate'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {},
-                        child: Text(isPickup ? 'Confirm Pickup' : 'Complete Delivery'),
+                        onPressed: (hasQr && hasPhoto) 
+                          ? () => _handleStatusUpdate(ref, order, isPickup)
+                          : () => _showActionSheet(context, ref, order, isPickup),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: (hasQr && hasPhoto) ? AppColors.success : AppColors.primary,
+                        ),
+                        child: Text(isPickup ? ( (hasQr && hasPhoto) ? 'Confirm Pickup' : 'Start Pickup') : 'Complete Delivery'),
                       ),
                     ),
                   ],
@@ -91,5 +142,69 @@ class RiderHomeScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+      ],
+    );
+  }
+
+  Widget _buildCheckItem(String label, bool isDone) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(isDone ? Icons.check_circle : Icons.circle_outlined, 
+             size: 16, color: isDone ? Colors.green : Colors.grey),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 12, color: isDone ? Colors.green : Colors.grey)),
+      ],
+    );
+  }
+
+  void _showActionSheet(BuildContext context, WidgetRef ref, OrderModel order, bool isPickup) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Complete Required Steps', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+              title: const Text('Scan Bag Tag'),
+              subtitle: const Text('Ensure correct order identification'),
+              trailing: order.qrCode != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
+              onTap: () {
+                ref.read(orderProvider.notifier).updateOrderProof(order.id, qrCode: 'TAG-${order.id.substring(0,5)}');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              title: const Text('Take Condition Photo'),
+              subtitle: const Text('Protect against liability claims'),
+              trailing: (isPickup ? order.pickupPhoto : order.deliveryPhoto) != null ? const Icon(Icons.check_circle, color: Colors.green) : null,
+              onTap: () {
+                ref.read(orderProvider.notifier).updateOrderProof(order.id, photoUrl: 'https://proof.url', isPickup: isPickup);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleStatusUpdate(WidgetRef ref, OrderModel order, bool isPickup) async {
+    final nextStatus = isPickup ? OrderStatus.pickedUp : OrderStatus.delivered;
+    await ref.read(orderProvider.notifier).updateOrderStatus(order.id, nextStatus);
   }
 }
