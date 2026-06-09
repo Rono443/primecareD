@@ -17,7 +17,7 @@ class RiderHomeScreen extends ConsumerWidget {
         final deliveries = orders.where((o) => o.status == OrderStatus.readyForDelivery).toList();
 
         return DefaultTabController(
-          length: 2,
+          length: 3,
           child: Scaffold(
             appBar: AppBar(
               title: const Column(
@@ -28,9 +28,11 @@ class RiderHomeScreen extends ConsumerWidget {
                 ],
               ),
               bottom: TabBar(
+                isScrollable: true,
                 tabs: [
                   Tab(text: 'Pickups (${pickups.length})'),
                   Tab(text: 'Deliveries (${deliveries.length})'),
+                  const Tab(text: 'My Earnings'),
                 ],
               ),
             ),
@@ -38,6 +40,7 @@ class RiderHomeScreen extends ConsumerWidget {
               children: [
                 _buildTaskList(context, ref, pickups, true),
                 _buildTaskList(context, ref, deliveries, false),
+                _buildEarningsView(),
               ],
             ),
           ),
@@ -206,5 +209,54 @@ class RiderHomeScreen extends ConsumerWidget {
   Future<void> _handleStatusUpdate(WidgetRef ref, OrderModel order, bool isPickup) async {
     final nextStatus = isPickup ? OrderStatus.pickedUp : OrderStatus.delivered;
     await ref.read(orderProvider.notifier).updateOrderStatus(order.id, nextStatus);
+  }
+
+  Widget _buildEarningsView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFF2E3192), Color(0xFF1BFFFF)]),
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Today\'s Payout', style: TextStyle(color: Colors.white70)),
+                SizedBox(height: 8),
+                Text('KES 2,450.00', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                Divider(color: Colors.white24, height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Completed Jobs: 12', style: TextStyle(color: Colors.white)),
+                    Text('Points: 450 pts', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Text('Recent Payout History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          _buildEarningTile('Mon, 22 Jan', '8 Jobs', '1,600'),
+          _buildEarningTile('Sun, 21 Jan', '15 Jobs', '3,200'),
+          _buildEarningTile('Sat, 20 Jan', '10 Jobs', '2,100'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEarningTile(String date, String jobs, String amount) {
+    return ListTile(
+      leading: const CircleAvatar(backgroundColor: Colors.blueGrey, child: Icon(Icons.history, color: Colors.white)),
+      title: Text(date),
+      subtitle: Text(jobs),
+      trailing: Text('KES $amount', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+    );
   }
 }

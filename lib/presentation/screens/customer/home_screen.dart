@@ -95,9 +95,13 @@ class CustomerHomeScreen extends ConsumerWidget {
   Widget _buildModernBalanceCard(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 200,
+      height: 220,
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, Color(0xFF1A73E8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -110,11 +114,11 @@ class CustomerHomeScreen extends ConsumerWidget {
       child: Stack(
         children: [
           Positioned(
-            right: -20,
-            top: -20,
+            right: -30,
+            top: -30,
             child: CircleAvatar(
-              radius: 80,
-              backgroundColor: Colors.white.withOpacity(0.1),
+              radius: 100,
+              backgroundColor: Colors.white.withOpacity(0.08),
             ),
           ),
           Padding(
@@ -126,25 +130,58 @@ class CustomerHomeScreen extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total Balance', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16)),
-                    const SizedBox(height: 4),
-                    const Text('KES 42,450.00', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Total Wallet Balance', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16)),
+                        const Icon(Icons.account_balance_wallet_outlined, color: Colors.white, size: 24),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('KES 12,500.00', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 Row(
                   children: [
                     _buildQuickAction(context, Icons.add_rounded, 'Top Up', () {
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('M-Pesa Top-up coming soon!')));
+                      _showTopUpDialog(context);
                     }),
                     const SizedBox(width: 12),
-                    _buildQuickAction(context, Icons.qr_code_scanner_rounded, 'Pay', () {
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('QR Scanner coming soon!')));
+                    _buildQuickAction(context, Icons.history_rounded, 'Activity', () {
+                      context.push('/customer-home/receipts');
                     }),
                   ],
                 ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  void _showTopUpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Top Up Wallet'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter amount to load via M-Pesa'),
+            const SizedBox(height: 16),
+            TextField(
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                prefixText: 'KES ',
+                hintText: 'e.g. 1000',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Simulate STK Push')),
         ],
       ),
     );

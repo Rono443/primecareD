@@ -9,6 +9,21 @@ import '../../providers/auth_provider.dart';
 class OrderSummaryScreen extends ConsumerWidget {
   const OrderSummaryScreen({super.key});
 
+  void _showDatePicker(BuildContext context, String type) {
+    showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    ).then((date) {
+      if (date != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$type date set to ${date.day}/${date.month}/${date.year}')),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
@@ -36,9 +51,16 @@ class OrderSummaryScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _buildInfoCard(
               icon: Icons.calendar_today_outlined,
-              title: 'Schedule',
-              subtitle: 'Pickup: Tomorrow, 10:00 AM\nDelivery: Friday, 4:00 PM',
-              onEdit: () {},
+              title: 'Schedule Pickup',
+              subtitle: 'Select your preferred time slot',
+              onEdit: () => _showDatePicker(context, 'Pickup'),
+            ),
+            const SizedBox(height: 12),
+            _buildInfoCard(
+              icon: Icons.delivery_dining_outlined,
+              title: 'Schedule Delivery',
+              subtitle: 'Select return time slot',
+              onEdit: () => _showDatePicker(context, 'Delivery'),
             ),
             const SizedBox(height: 32),
             _buildSectionHeader('Order Details'),

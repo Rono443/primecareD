@@ -24,6 +24,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  UserRole _selectedRole = UserRole.customer;
+
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -33,9 +35,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _emailController.text.trim(),
         _passwordController.text,
         _nameController.text.trim(),
-        UserRole.customer,
+        _selectedRole,
       );
-      if (mounted) context.go('/customer-home');
+      if (mounted) {
+        final user = ref.read(authProvider);
+        if (user != null) {
+          _redirectUser(user.role);
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -44,6 +51,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _redirectUser(UserRole role) {
+    switch (role) {
+      case UserRole.superAdmin: context.go('/admin-dashboard'); break;
+      case UserRole.laundryStaff: context.go('/staff-home'); break;
+      case UserRole.deliveryRider: context.go('/rider-home'); break;
+      default: context.go('/customer-home');
     }
   }
 
@@ -86,11 +102,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone_outlined)),
                 ),
                 const SizedBox(height: 20),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
-                  validator: (v) => v!.length < 6 ? 'Password too short' : null,
+                DropdownButtonFormField<UserRole>(
+                  value: _selectedRole,
+                  decoration: const InputDecoration(labelText: 'Register As', prefixIcon: Icon(Icons.badge_outlined)),
+                  items: [
+                    DropdownMenuItem(value: UserRole.customer, child: Text('Customer')),
+                    DropdownMenuItem(value: UserRole.deliveryRider, child: Text('Delivery Rider')),
+                    DropdownMenuItem(value: UserRole.laundryStaff, child: Text('Laundry Staff')),
+                  ],
+                  onChanged: (val) => setState(() => _selectedRole = val!),
                 ),
                 const SizedBox(height: 40),
                 SizedBox(

@@ -4,47 +4,52 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 
 class AuthRemoteSource {
-  FirebaseAuth get _auth {
+  // Graceful access to Firebase
+  FirebaseAuth? get _auth {
     try {
       return FirebaseAuth.instance;
     } catch (e) {
-      throw Exception('Firebase Auth not initialized. Check your configuration.');
+      return null;
     }
   }
 
-  FirebaseFirestore get _firestore {
+  FirebaseFirestore? get _firestore {
     try {
       return FirebaseFirestore.instance;
     } catch (e) {
-      throw Exception('Firestore not initialized. Check your configuration.');
+      return null;
     }
   }
 
   Stream<User?> get authStateChanges {
-    try {
-      return _auth.authStateChanges();
-    } catch (e) {
-      return Stream.value(null);
-    }
+    final auth = _auth;
+    if (auth == null) return Stream.value(null);
+    return auth.authStateChanges();
   }
 
   Future<UserModel?> login(String email, String password) async {
-    // Demo mode bypass
-    if (email.endsWith('@pc.com') && password == 'password123') {
-      final role = email.startsWith('admin') ? UserRole.superAdmin : 
-                   email.startsWith('staff') ? UserRole.laundryStaff :
-                   email.startsWith('rider') ? UserRole.deliveryRider : UserRole.customer;
+    final cleanEmail = email.trim().toLowerCase();
+    
+    // DEMO MODE: Bypass Firebase for testing
+    if (cleanEmail.contains('@pc.com') || cleanEmail.contains('@gmail.com')) {
+      final role = cleanEmail.startsWith('admin') ? UserRole.superAdmin : 
+                   cleanEmail.startsWith('staff') ? UserRole.laundryStaff :
+                   cleanEmail.startsWith('rider') ? UserRole.deliveryRider : UserRole.customer;
+      
       return UserModel(
         id: 'demo-uid',
-        email: email,
+        email: cleanEmail,
         name: 'Demo User',
         role: role,
       );
     }
 
+    final auth = _auth;
+    if (auth == null) throw Exception('Firebase not configured. Use a demo email (@pc.com or @gmail.com) to login.');
+
     try {
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
+      final credential = await auth.signInWithEmailAndPassword(
+        email: cleanEmail,
         password: password,
       );
       if (credential.user != null) {
@@ -57,19 +62,37 @@ class AuthRemoteSource {
   }
 
   Future<UserModel?> register(String email, String password, String name, UserRole role) async {
+    final cleanEmail = email.trim().toLowerCase();
+
+    // DEMO MODE: Bypass Firebase for testing
+    if (cleanEmail.contains('@pc.com') || cleanEmail.contains('@gmail.com')) {
+      return UserModel(
+        id: 'demo-uid-${DateTime.now().millisecondsSinceEpoch}',
+        email: cleanEmail,
+        name: name,
+        role: role,
+      );
+    }
+
+    final auth = _auth;
+    if (auth == null) throw Exception('Firebase not configured. Use a demo email (@pc.com or @gmail.com) to register.');
+
     try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
+      final credential = await auth.createUserWithEmailAndPassword(
+        email: cleanEmail,
         password: password,
       );
       if (credential.user != null) {
         final user = UserModel(
           id: credential.user!.uid,
-          email: email,
+          email: cleanEmail,
           name: name,
           role: role,
         );
-        await _firestore.collection('users').doc(user.id).set(user.toMap());
+        final firestore = _firestore;
+        if (firestore != null) {
+          await firestore.collection('users').doc(user.id).set(user.toMap());
+        }
         return user;
       }
     } catch (e) {
@@ -79,9 +102,13 @@ class AuthRemoteSource {
   }
 
   Future<UserModel?> getUserData(String uid) async {
-    if (uid == 'demo-uid') return null; // Or return a mock user
+    if (uid.startsWith('demo-uid')) return null;
+    
+    final firestore = _firestore;
+    if (firestore == null) return null;
+
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      final doc = await firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         return UserModel.fromMap(doc.data()!);
       }
@@ -93,7 +120,7 @@ class AuthRemoteSource {
 
   Future<void> logout() async {
     try {
-      await _auth.signOut();
+      await _auth?.signOut();
     } catch (e) {
       debugPrint('Logout error: $e');
     }

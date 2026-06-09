@@ -139,6 +139,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 40),
               
+              // Role Selector for Login
+              Row(
+                children: [
+                  const Text('Login as:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(width: 12),
+                  _buildRoleTag('Customer', true),
+                  _buildRoleTag('Rider', false),
+                  _buildRoleTag('Staff', false),
+                ],
+              ),
+              const SizedBox(height: 24),
+
               // Login Button
               SizedBox(
                 width: double.infinity,
@@ -180,6 +192,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _buildDemoLogins(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleTag(String label, bool isSelected) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.primary : AppColors.background,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: isSelected ? Colors.white : AppColors.textSecondary,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
     );

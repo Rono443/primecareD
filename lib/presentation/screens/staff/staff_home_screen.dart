@@ -39,6 +39,8 @@ class StaffHomeScreen extends ConsumerWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
+                _buildPriorityBadge(),
+                const SizedBox(height: 12),
                 Expanded(child: _buildAssignedOrdersList(inProgressOrders, ref)),
               ],
             ),
@@ -156,6 +158,27 @@ class StaffHomeScreen extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPriorityBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.priority_high_rounded, color: Colors.red, size: 20),
+          SizedBox(width: 12),
+          Text(
+            '3 Urgent Express Orders',
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 
