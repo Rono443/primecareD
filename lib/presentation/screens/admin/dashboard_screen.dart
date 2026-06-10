@@ -62,7 +62,42 @@ class AdminDashboardScreen extends ConsumerWidget {
           _buildStatsGrid(context, totalOrders, revenue),
           const SizedBox(height: 24),
           _buildActivitySection(),
+          const SizedBox(height: 24),
+          _buildQuickManagementSection(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickManagementSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Business Controls', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        _buildControlTile(context, 'Assign Riders', 'Connect orders to available riders', Icons.delivery_dining, Colors.blue),
+        _buildControlTile(context, 'Price List', 'Update laundry service rates', Icons.sell, Colors.green),
+        _buildControlTile(context, 'System Logs', 'Monitor business operations', Icons.terminal, Colors.grey),
+      ],
+    );
+  }
+
+  Widget _buildControlTile(BuildContext context, String title, String subtitle, IconData icon, Color color) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: color),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+        trailing: const Icon(Icons.chevron_right, size: 20),
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$title screen opening...')));
+        },
       ),
     );
   }

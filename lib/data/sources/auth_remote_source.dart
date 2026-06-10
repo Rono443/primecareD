@@ -31,6 +31,14 @@ class AuthRemoteSource {
     final cleanEmail = email.trim().toLowerCase();
     
     // DEMO MODE: Bypass Firebase for testing
+    // Check for specific rider/staff test accounts
+    if (cleanEmail == 'rider@pc.com') {
+      return UserModel(id: 'demo-rider', email: cleanEmail, name: 'Rider Mike', role: UserRole.deliveryRider);
+    }
+    if (cleanEmail == 'staff@pc.com') {
+      return UserModel(id: 'demo-staff', email: cleanEmail, name: 'Staff Sarah', role: UserRole.laundryStaff);
+    }
+
     if (cleanEmail.contains('@pc.com') || cleanEmail.contains('@gmail.com')) {
       final role = cleanEmail.startsWith('admin') ? UserRole.superAdmin : 
                    cleanEmail.startsWith('staff') ? UserRole.laundryStaff :
@@ -65,7 +73,9 @@ class AuthRemoteSource {
     final cleanEmail = email.trim().toLowerCase();
 
     // DEMO MODE: Bypass Firebase for testing
-    if (cleanEmail.contains('@pc.com') || cleanEmail.contains('@gmail.com')) {
+    // If Firebase isn't initialized or it's a demo/gmail account, allow registration
+    if (_auth == null || cleanEmail.contains('@pc.com') || cleanEmail.contains('@gmail.com')) {
+      debugPrint('Registering in Demo Mode: $cleanEmail as $role');
       return UserModel(
         id: 'demo-uid-${DateTime.now().millisecondsSinceEpoch}',
         email: cleanEmail,
